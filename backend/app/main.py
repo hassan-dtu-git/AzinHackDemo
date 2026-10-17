@@ -18,7 +18,9 @@ from app.providers.tinyfish_research import (
     normalize_evidence_graph,
     normalize_research_run,
 )
-from app.run_store import get_run as get_stored_run, list_runs as list_stored_runs, save_run
+from app.run_store import get_run as get_stored_run
+from app.run_store import list_runs as list_stored_runs
+from app.run_store import save_run
 
 load_dotenv()
 
