@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -143,3 +144,35 @@ def test_create_run_is_persisted_for_history(monkeypatch, tmp_path) -> None:
     assert response.status_code == 202
     assert history.status_code == 200
     assert history.json()["runs"][0]["run_id"] == "test-run-123"
+
+
+
+def test_saved_run_can_be_reopened_when_provider_is_unavailable(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("RESEARCHPILOT_DB_PATH", str(tmp_path / "saved-fallback.sqlite3"))
+    save_run(
+        {
+            "run_id": "offline-run-7",
+            "question": "How can researchers measure river turbidity?",
+            "status": "COMPLETED",
+            "created_at": "2026-10-17T10:00:00+00:00",
+            "stages": ["Plan", "Search", "Extract", "Verify and compare", "Synthesize"],
+            "message": "Completed previously",
+            "report": "Previously saved source-backed report.",
+            "citations": [],
+            "research_plan": [],
+            "evidence": [],
+            "evidence_graph": {"nodes": [], "edges": []},
+            "error": None,
+            "iterations": 1,
+        }
+    )
+
+    def unavailable_client():
+        raise HTTPException(status_code=503, detail="TinyFish API key is not configured.")
+
+    monkeypatch.setattr("app.main.get_tinyfish_client", unavailable_client)
+    response = client.get("/api/research-runs/offline-run-7")
+
+    assert response.status_code == 200
+    assert response.json()["report"] == "Previously saved source-backed report."
+    assert "last saved snapshot" in response.json()["message"]
