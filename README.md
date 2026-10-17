@@ -33,6 +33,11 @@ uvicorn app.main:app --reload --port 8000
 Health check: http://127.0.0.1:8000/health  
 API schema: http://127.0.0.1:8000/docs
 
+
+### TinyFish account notes
+
+The app uses the TinyFish Research API (currently documented as beta). Create a key at https://agent.tinyfish.ai/api-keys and confirm Research API access is enabled for that account. TinyFish documents deep runs as typically taking 5–20 minutes and Research beta limits as five runs per account per Pacific calendar day by default, so keep a known-good completed run ready for the live demo. Search/Fetch are faster alternatives if the team later adds its own extraction/synthesis layer.
+
 ### Frontend
 
 In a second terminal:
