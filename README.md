@@ -17,7 +17,7 @@ ResearchPilot AI is a hackathon MVP by Team ByteForge for AzinHack. The target p
 
 ### Backend
 
-Python 3.12 is recommended. In the `backend` folder, copy the root `.env.example` to `.env` and set `TINYFISH_API_KEY` from your TinyFish dashboard. Never commit the real key.
+Python 3.12 is recommended. From the repository root, copy `.env.example` to `backend/.env` and set `TINYFISH_API_KEY` from your TinyFish dashboard. For PowerShell run `Copy-Item .env.example backend/.env`; for macOS/Linux run `cp .env.example backend/.env`. Never commit the real key.
 
 ~~~bash
 cd backend
