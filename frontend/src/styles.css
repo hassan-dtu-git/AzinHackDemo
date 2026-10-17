@@ -84,3 +84,15 @@ textarea::placeholder { color: #9aa4b5; }
   .footer { flex-direction: column; }
   .run-panel-heading { align-items: flex-start; flex-direction: column; }
 }
+
+.report-section { margin-top: 28px; padding-top: 25px; border-top: 1px solid var(--line); }
+.report-section h3 { margin: 0 0 16px; font-size: 20px; letter-spacing: -.4px; }
+.report-text { max-height: 650px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: #fbfcfe; color: #27344d; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.75; }
+.source-heading { margin: 22px 0 10px; font-size: 13px; font-weight: 750; }
+.source-list { margin: 0; padding-left: 24px; }
+.source-list li { padding: 10px 0; color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.source-list a { color: var(--accent-dark); font-weight: 700; text-decoration: none; }
+.source-list a:hover { text-decoration: underline; }
+.source-url { display: block; margin-top: 3px; color: #7b879b; font-size: 11px; font-weight: 400; }
+.muted-note { color: var(--muted); font-size: 12px; line-height: 1.65; }
+.failed-pill { color: #9b2634; background: #fff1f2; border-color: #ffd7dc; }
