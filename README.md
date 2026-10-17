@@ -4,13 +4,13 @@
 
 ResearchPilot AI is a hackathon MVP by Team ByteForge for AzinHack. The target product plans research queries, discovers public sources, extracts structured evidence, compares claims, assesses candidate research gaps, and presents a cited report with an evidence graph.
 
-> **Current status:** the frontend and API are wired to TinyFish Research API. Live runs require a valid `TINYFISH_API_KEY` and Research API access on the account. The provider can take several minutes; the UI polls for status and displays the returned report/citations. Evidence graph and deeper local analysis are still in progress.
+> **Current status:** the frontend and API are wired to TinyFish Research API. Live runs require a valid `TINYFISH_API_KEY` and Research API access on the account. The provider can take several minutes; the UI polls for status and displays the returned report/citations. The API stores run snapshots in SQLite and the UI lists recent runs for reopening. Evidence graph links are conservative and depend on explicit provider evidence; deeper local analysis remains in progress.
 
 ## Planned stack
 
 - Frontend: React + Vite + TypeScript
 - Backend: Python 3.12 + FastAPI + Pydantic
-- Storage: SQLite planned for the MVP
+- Storage: SQLite stores recent research runs locally so they can be reopened
 - Discovery and cited synthesis: TinyFish Research API (beta; account access/quota may apply)
 
 ## Run locally
@@ -50,7 +50,11 @@ npm run dev
 
 Open http://localhost:5173. Vite proxies `/api` and `/health` requests to the backend on port 8000.
 
-### Tests
+### Run history storage
+
+Research run snapshots are stored in `backend/researchpilot.sqlite3` by default. Override the location with `RESEARCHPILOT_DB_PATH` if needed. The database is local and should not be committed. The history endpoint returns the latest 20 saved runs by default.
+
+## Tests
 
 With the backend virtual environment activated:
 
