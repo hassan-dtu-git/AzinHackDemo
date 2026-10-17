@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 
 from app.gap_analysis import extract_gap_candidates
 from app.main import app
-from app.providers.tinyfish_research import normalize_evidence_graph
+from app.providers.tinyfish_research import normalize_evidence_graph, normalize_research_run
 from app.run_store import get_run, list_runs, save_run
 
 client = TestClient(app)
@@ -221,3 +221,37 @@ def test_gap_candidates_do_not_infer_gap_from_citations_alone() -> None:
         [{"url": "https://example.org/paper", "title": "Paper"}],
     )
     assert candidates == []
+
+
+
+def test_citation_metadata_is_normalized_and_verification_limits_are_explicit() -> None:
+    normalized = normalize_research_run(
+        {
+            "research_run_id": "metadata-run",
+            "status": "COMPLETED",
+            "deep_result": {
+                "result": "A report",
+                "citations": [
+                    {
+                        "url": "https://example.org/paper",
+                        "title": "A paper",
+                        "authors": ["Ada Researcher", "Sam Scientist"],
+                        "published_at": "2025-05-10",
+                        "source_type": "journal article",
+                    },
+                    {"url": "javascript:alert(1)", "title": "Unsafe URL"},
+                    {"url": "https://example.org/paper", "title": "Duplicate URL"},
+                    {"url": "https://example.net/only-url"},
+                ],
+            },
+        }
+    )
+
+    assert len(normalized["citations"]) == 2
+    first, second = normalized["citations"]
+    assert first["domain"] == "example.org"
+    assert first["authors"] == ["Ada Researcher", "Sam Scientist"]
+    assert first["published_at"] == "2025-05-10"
+    assert first["metadata_status"] == "provider_metadata_partial"
+    assert "not been independently fetched" in first["verification_note"]
+    assert second["metadata_status"] == "url_only"
