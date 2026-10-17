@@ -64,7 +64,7 @@ pytest
 ruff check .
 ~~~
 
-These commands are documented from the configured manifests but have not been executed in this hosted editing session.
+GitHub Actions runs the backend tests, Ruff, and frontend production build on each push. The code-editing session itself cannot execute the app locally, so use the CI results as the current validation record.
 
 ## Project documents
 
