@@ -1,21 +1,43 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
+type Citation = { url: string; title: string };
 type RunResponse = {
   run_id: string;
   question: string;
-  status: "pending_integration";
+  status: string;
   created_at: string;
   stages: string[];
   message: string;
+  report?: string | null;
+  citations?: Citation[];
+  error?: unknown;
 };
 
 const sampleQuestion = "Can AI detect river pollution using satellite imagery?";
+const terminalStatuses = new Set(["COMPLETED", "FAILED", "CANCELLED", "TIMED_OUT"]);
 
 export default function App() {
   const [question, setQuestion] = useState("");
   const [run, setRun] = useState<RunResponse | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!run || terminalStatuses.has(run.status)) return;
+    const timeout = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/research-runs/${encodeURIComponent(run.run_id)}`);
+        if (!response.ok) {
+          const body = await response.json().catch(() => null);
+          throw new Error(body?.detail ?? "Could not retrieve research status.");
+        }
+        setRun((await response.json()) as RunResponse);
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "Could not refresh research status.");
+      }
+    }, 5000);
+    return () => window.clearTimeout(timeout);
+  }, [run]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,11 +58,12 @@ export default function App() {
       });
 
       if (!response.ok) {
-        if (response.status === 404 || response.status >= 500) {
-          throw new Error("Could not reach the API. Check that the backend is running.");
-        }
         const detail = await response.json().catch(() => null);
-        throw new Error(detail?.detail?.[0]?.msg ?? "The question could not be submitted.");
+        throw new Error(
+          typeof detail?.detail === "string"
+            ? detail.detail
+            : "Could not start research. Check the backend and TinyFish configuration.",
+        );
       }
 
       setRun((await response.json()) as RunResponse);
@@ -50,6 +73,9 @@ export default function App() {
       setSubmitting(false);
     }
   }
+
+  const isTerminal = run ? terminalStatuses.has(run.status) : false;
+  const hasReport = Boolean(run?.report);
 
   return (
     <main className="page-shell">
@@ -109,23 +135,55 @@ export default function App() {
           <section className="run-panel" aria-live="polite">
             <div className="run-panel-heading">
               <div>
-                <p className="eyebrow">RUN CREATED</p>
+                <p className="eyebrow">RESEARCH RUN</p>
                 <h3>Research pipeline</h3>
               </div>
-              <span className="pending-pill">Integration pending</span>
+              <span className={isTerminal && run.status !== "COMPLETED" ? "pending-pill failed-pill" : "pending-pill"}>
+                {run.status.replaceAll("_", " ")}
+              </span>
             </div>
-            <p className="run-question">“{run.question}”</p>
+            <p className="run-question">“{run.question || question}”</p>
             <ol className="pipeline">
               {run.stages.map((stage, index) => (
                 <li key={stage}>
                   <span className="pipeline-number">{String(index + 1).padStart(2, "0")}</span>
                   <span>{stage}</span>
-                  <span className="stage-status">Not started</span>
                 </li>
               ))}
             </ol>
             <p className="alert notice">{run.message}</p>
+            {run.error && (
+              <p className="alert error">
+                Provider reported a terminal error. Partial results may still be available.
+              </p>
+            )}
             <p className="run-id">Run ID: <code>{run.run_id}</code></p>
+
+            {hasReport && (
+              <section className="report-section">
+                <p className="eyebrow">SOURCE-BACKED REPORT</p>
+                <h3>Research findings</h3>
+                <pre className="report-text">{run.report}</pre>
+                <p className="source-heading">Sources returned by TinyFish ({run.citations?.length ?? 0})</p>
+                {run.citations && run.citations.length > 0 ? (
+                  <ol className="source-list">
+                    {run.citations.map((citation) => (
+                      <li key={citation.url}>
+                        <a href={citation.url} target="_blank" rel="noreferrer">
+                          {citation.title || citation.url}
+                        </a>
+                        {citation.title && <span className="source-url">{citation.url}</span>}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="muted-note">The provider response did not include a normalized citation list. Review the report and provider evidence before relying on its claims.</p>
+                )}
+              </section>
+            )}
+            {isTerminal && !hasReport && (
+              <p className="muted-note">This run ended without a final report. Check the provider configuration/quota and try again only after confirming the previous run's status.</p>
+            )}
           </section>
         )}
       </section>
@@ -150,7 +208,7 @@ export default function App() {
 
       <footer className="footer">
         <span>ResearchPilot AI · Team ByteForge · AzinHack</span>
-        <span>Early MVP foundation</span>
+        <span>Early MVP · TinyFish Research API</span>
       </footer>
     </main>
   );
