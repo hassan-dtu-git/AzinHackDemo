@@ -19,16 +19,16 @@ ResearchPilot AI is a hackathon MVP by Team ByteForge for AzinHack. The target p
 
 Python 3.12 is recommended.
 
-\`\`\`bash
+~~~bash
 cd backend
 python -m venv .venv
 # Windows PowerShell:
-.venv\\Scripts\\Activate.ps1
+.venv\Scripts\Activate.ps1
 # macOS/Linux:
 # source .venv/bin/activate
 python -m pip install -e ".[dev]"
 uvicorn app.main:app --reload --port 8000
-\`\`\`
+~~~
 
 Health check: http://127.0.0.1:8000/health  
 API schema: http://127.0.0.1:8000/docs
@@ -37,11 +37,11 @@ API schema: http://127.0.0.1:8000/docs
 
 In a second terminal:
 
-\`\`\`bash
+~~~bash
 cd frontend
 npm install
 npm run dev
-\`\`\`
+~~~
 
 Open http://localhost:5173. Vite proxies `/api` and `/health` requests to the backend on port 8000.
 
@@ -49,11 +49,11 @@ Open http://localhost:5173. Vite proxies `/api` and `/health` requests to the ba
 
 With the backend virtual environment activated:
 
-\`\`\`bash
+~~~bash
 cd backend
 pytest
 ruff check .
-\`\`\`
+~~~
 
 These commands are documented from the configured manifests but have not been executed in this hosted editing session.
 
