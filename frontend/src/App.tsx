@@ -14,6 +14,7 @@ type RunResponse = {
   report?: string | null;
   citations?: Citation[];
   error?: unknown;
+  evidence_graph?: EvidenceGraph;
 };
 
 const sampleQuestion = "Can AI detect river pollution using satellite imagery?";
