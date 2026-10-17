@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from app.gap_analysis import extract_gap_candidates
 from app.main import app
 from app.providers.tinyfish_research import normalize_evidence_graph
 from app.run_store import get_run, list_runs, save_run
@@ -176,3 +177,47 @@ def test_saved_run_can_be_reopened_when_provider_is_unavailable(monkeypatch, tmp
     assert response.status_code == 200
     assert response.json()["report"] == "Previously saved source-backed report."
     assert "last saved snapshot" in response.json()["message"]
+
+
+
+def test_gap_candidates_require_explicit_limitation_and_valid_source() -> None:
+    candidates = extract_gap_candidates(
+        [
+            {
+                "claim": "A general finding without an explicit limitation.",
+                "source_url": "https://example.org/a",
+            },
+            {
+                "limitation": "The study only tested one watershed.",
+                "source": {
+                    "url": "https://example.org/paper",
+                    "title": "Watershed monitoring study",
+                },
+            },
+            {
+                "future_work": "Test the method across seasons.",
+                "source_url": "javascript:alert(1)",
+            },
+            {
+                "research_gap": "The dataset excludes monsoon observations.",
+                "source_url": "https://example.org/paper",
+                "source_title": "Duplicate source title",
+            },
+        ],
+        [{"url": "https://example.org/paper", "title": "Watershed monitoring study"}],
+    )
+
+    assert [candidate["description"] for candidate in candidates] == [
+        "The study only tested one watershed.",
+        "The dataset excludes monsoon observations.",
+    ]
+    assert all(candidate["source_url"].startswith("https://") for candidate in candidates)
+    assert all("global novelty" not in candidate["basis"].lower() for candidate in candidates)
+
+
+def test_gap_candidates_do_not_infer_gap_from_citations_alone() -> None:
+    candidates = extract_gap_candidates(
+        [{"claim": "A finding with no limitation field.", "source_url": "https://example.org/paper"}],
+        [{"url": "https://example.org/paper", "title": "Paper"}],
+    )
+    assert candidates == []
