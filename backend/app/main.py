@@ -11,14 +11,14 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
-load_dotenv()
-
 from app.providers.tinyfish_research import (
     TinyFishAPIError,
     TinyFishConfigurationError,
     TinyFishResearchClient,
     normalize_research_run,
 )
+
+load_dotenv()
 
 app = FastAPI(
     title="ResearchPilot AI API",
