@@ -4,20 +4,20 @@
 
 ResearchPilot AI is a hackathon MVP by Team ByteForge for AzinHack. The target product plans research queries, discovers public sources, extracts structured evidence, compares claims, assesses candidate research gaps, and presents a cited report with an evidence graph.
 
-> **Current status:** the initial frontend and API foundation are committed. Live TinyFish/LLM research is not integrated yet. The API explicitly reports this status; it does not fabricate sources or findings.
+> **Current status:** the frontend and API are wired to TinyFish Research API. Live runs require a valid `TINYFISH_API_KEY` and Research API access on the account. The provider can take several minutes; the UI polls for status and displays the returned report/citations. Evidence graph and deeper local analysis are still in progress.
 
 ## Planned stack
 
 - Frontend: React + Vite + TypeScript
 - Backend: Python 3.12 + FastAPI + Pydantic
 - Storage: SQLite planned for the MVP
-- Discovery: TinyFish, after verifying the current official API contract and team credentials
+- Discovery and cited synthesis: TinyFish Research API (beta; account access/quota may apply)
 
 ## Run locally
 
 ### Backend
 
-Python 3.12 is recommended.
+Python 3.12 is recommended. In the `backend` folder, copy the root `.env.example` to `.env` and set `TINYFISH_API_KEY` from your TinyFish dashboard. Never commit the real key.
 
 ~~~bash
 cd backend
