@@ -1,7 +1,9 @@
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.main import app
 from app.providers.tinyfish_research import normalize_evidence_graph
+from app.run_store import get_run, list_runs, save_run
 
 client = TestClient(app)
 
@@ -106,3 +108,71 @@ def test_evidence_graph_does_not_infer_contradictions() -> None:
 
     assert len(graph["edges"]) == 1
     assert graph["edges"][0]["relation"] == "associated"
+
+
+
+def test_sqlite_store_saves_and_lists_runs(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("RESEARCHPILOT_DB_PATH", str(tmp_path / "research-runs.sqlite3"))
+    saved = {
+        "run_id": "persistent-run-1",
+        "question": "How do researchers monitor river quality?",
+        "status": "COMPLETED",
+        "created_at": "2026-10-17T10:00:00+00:00",
+        "stages": ["Plan", "Search"],
+        "message": "Completed",
+        "report": "A saved report",
+        "citations": [],
+        "evidence_graph": {"nodes": [], "edges": []},
+    }
+
+    save_run(saved)
+
+    assert get_run("persistent-run-1") == saved
+    assert list_runs() == [saved]
+
+
+def test_create_run_is_persisted_for_history(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("RESEARCHPILOT_DB_PATH", str(tmp_path / "api-runs.sqlite3"))
+    monkeypatch.setattr("app.main.get_tinyfish_client", lambda: FakeTinyFish())
+
+    response = client.post(
+        "/api/research-runs",
+        json={"question": "Can AI detect river pollution using satellite imagery?"},
+    )
+    history = client.get("/api/research-runs")
+
+    assert response.status_code == 202
+    assert history.status_code == 200
+    assert history.json()["runs"][0]["run_id"] == "test-run-123"
+
+
+
+def test_saved_run_can_be_reopened_when_provider_is_unavailable(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("RESEARCHPILOT_DB_PATH", str(tmp_path / "saved-fallback.sqlite3"))
+    save_run(
+        {
+            "run_id": "offline-run-7",
+            "question": "How can researchers measure river turbidity?",
+            "status": "COMPLETED",
+            "created_at": "2026-10-17T10:00:00+00:00",
+            "stages": ["Plan", "Search", "Extract", "Verify and compare", "Synthesize"],
+            "message": "Completed previously",
+            "report": "Previously saved source-backed report.",
+            "citations": [],
+            "research_plan": [],
+            "evidence": [],
+            "evidence_graph": {"nodes": [], "edges": []},
+            "error": None,
+            "iterations": 1,
+        }
+    )
+
+    def unavailable_client():
+        raise HTTPException(status_code=503, detail="TinyFish API key is not configured.")
+
+    monkeypatch.setattr("app.main.get_tinyfish_client", unavailable_client)
+    response = client.get("/api/research-runs/offline-run-7")
+
+    assert response.status_code == 200
+    assert response.json()["report"] == "Previously saved source-backed report."
+    assert "last saved snapshot" in response.json()["message"]

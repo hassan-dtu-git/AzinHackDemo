@@ -18,6 +18,9 @@ from app.providers.tinyfish_research import (
     normalize_evidence_graph,
     normalize_research_run,
 )
+from app.run_store import get_run as get_stored_run
+from app.run_store import list_runs as list_stored_runs
+from app.run_store import save_run
 
 load_dotenv()
 
@@ -82,6 +85,10 @@ class ResearchRunResponse(BaseModel):
     iterations: int | None = None
 
 
+class ResearchRunListResponse(BaseModel):
+    runs: list[ResearchRunResponse]
+
+
 STAGES = ["Plan", "Search", "Extract", "Verify and compare", "Synthesize"]
 
 
@@ -98,6 +105,12 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "researchpilot-api"}
 
 
+@app.get("/api/research-runs", response_model=ResearchRunListResponse)
+def list_research_runs() -> ResearchRunListResponse:
+    """List recently saved runs so the user can reopen previous research."""
+    return ResearchRunListResponse(runs=list_stored_runs())
+
+
 @app.post(
     "/api/research-runs",
     response_model=ResearchRunResponse,
@@ -112,7 +125,7 @@ def create_research_run(payload: CreateResearchRunRequest) -> ResearchRunRespons
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     run_id = str(provider_run["research_run_id"])
-    return ResearchRunResponse(
+    response = ResearchRunResponse(
         run_id=run_id,
         question=payload.question,
         status="QUEUED",
@@ -123,15 +136,27 @@ def create_research_run(payload: CreateResearchRunRequest) -> ResearchRunRespons
             "this page will check for updates."
         ),
     )
+    save_run(response.model_dump(mode="json"))
+    return response
 
 
 @app.get("/api/research-runs/{run_id}", response_model=ResearchRunResponse)
 def get_research_run(run_id: str) -> ResearchRunResponse:
-    """Poll the provider for status and its saved report/evidence."""
-    client = get_tinyfish_client()
+    """Refresh a run from TinyFish, falling back to its last saved snapshot."""
+    stored = get_stored_run(run_id)
     try:
+        client = get_tinyfish_client()
         provider_payload = client.get_run(run_id)
-    except TinyFishAPIError as exc:
+    except (HTTPException, TinyFishAPIError) as exc:
+        if stored is not None:
+            saved_response = ResearchRunResponse.model_validate(stored)
+            saved_response.message = (
+                "Showing the last saved snapshot because live provider refresh failed. "
+                "The displayed status and report may be out of date."
+            )
+            return saved_response
+        if isinstance(exc, HTTPException):
+            raise
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     normalized = normalize_research_run(provider_payload)
@@ -139,12 +164,17 @@ def get_research_run(run_id: str) -> ResearchRunResponse:
     if normalized_status not in {item.value for item in RunStatus}:
         normalized_status = "RUNNING"
 
-    question = normalized["question"] or "Research question"
-    return ResearchRunResponse(
+    question = normalized["question"] or (stored or {}).get("question") or "Research question"
+    stored_created_at = (stored or {}).get("created_at")
+    try:
+        created_at = datetime.fromisoformat(stored_created_at) if stored_created_at else datetime.now(UTC)
+    except (TypeError, ValueError):
+        created_at = datetime.now(UTC)
+    response = ResearchRunResponse(
         run_id=normalized["run_id"] or run_id,
         question=question,
         status=normalized_status,
-        created_at=datetime.now(UTC),
+        created_at=created_at,
         stages=STAGES,
         message=normalized["message"],
         report=normalized["report"] or None,
@@ -155,3 +185,5 @@ def get_research_run(run_id: str) -> ResearchRunResponse:
         error=normalized["error"],
         iterations=normalized["iterations"] if isinstance(normalized["iterations"], int) else None,
     )
+    save_run(response.model_dump(mode="json"))
+    return response
