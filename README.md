@@ -4,7 +4,7 @@
 
 ResearchPilot AI is a hackathon MVP by Team ByteForge for AzinHack. The target product plans research queries, discovers public sources, extracts structured evidence, compares claims, assesses candidate research gaps, and presents a cited report with an evidence graph.
 
-> **Current status:** the frontend and API are wired to TinyFish Research API. Live runs require a valid `TINYFISH_API_KEY` and Research API access on the account. The provider can take several minutes; the UI polls for status and displays the returned report/citations. The API stores run snapshots in SQLite and the UI lists recent runs for reopening. Evidence graph links are conservative and depend on explicit provider evidence. Candidate research gaps are surfaced only when provider evidence explicitly labels a limitation, gap, or future-work statement and links it to a valid source URL; they are not novelty claims.
+> **Current status:** the frontend and API are wired to TinyFish Research API. Live runs require a valid `TINYFISH_API_KEY` and Research API access on the account. The provider can take several minutes; the UI polls for status and displays the returned report/citations. The API stores run snapshots in SQLite and the UI lists recent runs for reopening. Evidence graph links are conservative and depend on explicit provider evidence. Citation metadata includes the provider-supplied domain, title, authors, date, and source type when available; the UI explicitly notes that ResearchPilot has not independently fetched the source page. Candidate research gaps are surfaced only when provider evidence explicitly labels a limitation, gap, or future-work statement and links it to a valid source URL; they are not novelty claims.
 
 ## Planned stack
 
