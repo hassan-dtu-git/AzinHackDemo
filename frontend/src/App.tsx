@@ -4,6 +4,7 @@ type Citation = { url: string; title: string };
 type EvidenceNode = { id: string; type: "source" | "claim"; label: string; url?: string };
 type EvidenceEdge = { source: string; target: string; relation: string };
 type EvidenceGraph = { nodes: EvidenceNode[]; edges: EvidenceEdge[] };
+type RunHistoryResponse = { runs: RunResponse[] };
 type RunResponse = {
   run_id: string;
   question: string;
@@ -25,6 +26,8 @@ export default function App() {
   const [run, setRun] = useState<RunResponse | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [history, setHistory] = useState<RunResponse[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
   useEffect(() => {
     if (!run || terminalStatuses.has(run.status)) return;
@@ -36,6 +39,8 @@ export default function App() {
           throw new Error(body?.detail ?? "Could not retrieve research status.");
         }
         setRun((await response.json()) as RunResponse);
+      void refreshHistory();
+        void refreshHistory();
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "Could not refresh research status.");
         setRun((current) => current ? { ...current, message: "Status refresh failed; retrying shortly." } : current);
@@ -133,6 +138,37 @@ export default function App() {
             </button>
           </div>
         </form>
+
+        <section className="history-section" aria-labelledby="history-heading">
+          <div className="history-heading-row">
+            <div>
+              <p className="eyebrow">YOUR WORK</p>
+              <h3 id="history-heading">Recent research runs</h3>
+            </div>
+            <button className="sample-button" type="button" onClick={() => void refreshHistory()}>
+              Refresh history
+            </button>
+          </div>
+          {loadingHistory ? (
+            <p className="muted-note">Loading saved runs…</p>
+          ) : history.length === 0 ? (
+            <p className="muted-note">Your submitted research runs will appear here so you can reopen them later.</p>
+          ) : (
+            <ul className="history-list">
+              {history.map((item) => (
+                <li key={item.run_id}>
+                  <button className="history-item" type="button" onClick={() => void reopenRun(item.run_id)}>
+                    <span className="history-item-copy">
+                      <strong>{item.question || "Research question"}</strong>
+                      <small>{new Date(item.created_at).toLocaleString()}</small>
+                    </span>
+                    <span className={`history-status history-status-${item.status.toLowerCase()}`}>{item.status.replaceAll("_", " ")}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         {error && <p className="alert error" role="alert">{error}</p>}
 
