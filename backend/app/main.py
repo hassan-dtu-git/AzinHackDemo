@@ -11,7 +11,6 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
-from app.run_store import get_run as get_stored_run, list_runs as list_stored_runs, save_run
 from app.providers.tinyfish_research import (
     TinyFishAPIError,
     TinyFishConfigurationError,
@@ -19,6 +18,7 @@ from app.providers.tinyfish_research import (
     normalize_evidence_graph,
     normalize_research_run,
 )
+from app.run_store import get_run as get_stored_run, list_runs as list_stored_runs, save_run
 
 load_dotenv()
 
