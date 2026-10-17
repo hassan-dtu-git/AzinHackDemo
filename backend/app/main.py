@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
+from app.run_store import get_run as get_stored_run, list_runs as list_stored_runs, save_run
 from app.providers.tinyfish_research import (
     TinyFishAPIError,
     TinyFishConfigurationError,
@@ -82,6 +83,10 @@ class ResearchRunResponse(BaseModel):
     iterations: int | None = None
 
 
+class ResearchRunListResponse(BaseModel):
+    runs: list[ResearchRunResponse]
+
+
 STAGES = ["Plan", "Search", "Extract", "Verify and compare", "Synthesize"]
 
 
@@ -98,6 +103,12 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "researchpilot-api"}
 
 
+@app.get("/api/research-runs", response_model=ResearchRunListResponse)
+def list_research_runs() -> ResearchRunListResponse:
+    """List recently saved runs so the user can reopen previous research."""
+    return ResearchRunListResponse(runs=list_stored_runs())
+
+
 @app.post(
     "/api/research-runs",
     response_model=ResearchRunResponse,
@@ -112,7 +123,7 @@ def create_research_run(payload: CreateResearchRunRequest) -> ResearchRunRespons
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     run_id = str(provider_run["research_run_id"])
-    return ResearchRunResponse(
+    response = ResearchRunResponse(
         run_id=run_id,
         question=payload.question,
         status="QUEUED",
@@ -123,6 +134,8 @@ def create_research_run(payload: CreateResearchRunRequest) -> ResearchRunRespons
             "this page will check for updates."
         ),
     )
+    save_run(response.model_dump(mode="json"))
+    return response
 
 
 @app.get("/api/research-runs/{run_id}", response_model=ResearchRunResponse)
@@ -139,12 +152,18 @@ def get_research_run(run_id: str) -> ResearchRunResponse:
     if normalized_status not in {item.value for item in RunStatus}:
         normalized_status = "RUNNING"
 
-    question = normalized["question"] or "Research question"
-    return ResearchRunResponse(
+    stored = get_stored_run(run_id)
+    question = normalized["question"] or (stored or {}).get("question") or "Research question"
+    stored_created_at = (stored or {}).get("created_at")
+    try:
+        created_at = datetime.fromisoformat(stored_created_at) if stored_created_at else datetime.now(UTC)
+    except (TypeError, ValueError):
+        created_at = datetime.now(UTC)
+    response = ResearchRunResponse(
         run_id=normalized["run_id"] or run_id,
         question=question,
         status=normalized_status,
-        created_at=datetime.now(UTC),
+        created_at=created_at,
         stages=STAGES,
         message=normalized["message"],
         report=normalized["report"] or None,
@@ -155,3 +174,5 @@ def get_research_run(run_id: str) -> ResearchRunResponse:
         error=normalized["error"],
         iterations=normalized["iterations"] if isinstance(normalized["iterations"], int) else None,
     )
+    save_run(response.model_dump(mode="json"))
+    return response
