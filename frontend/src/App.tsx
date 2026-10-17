@@ -34,6 +34,7 @@ export default function App() {
         setRun((await response.json()) as RunResponse);
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "Could not refresh research status.");
+        setRun((current) => current ? { ...current, message: "Status refresh failed; retrying shortly." } : current);
       }
     }, 5000);
     return () => window.clearTimeout(timeout);
