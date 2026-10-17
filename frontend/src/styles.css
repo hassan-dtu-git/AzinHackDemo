@@ -148,3 +148,6 @@ textarea::placeholder { color: #9aa4b5; }
 .gap-list li a { display: inline-block; color: var(--accent-dark); font-size: 11px; font-weight: 750; overflow-wrap: anywhere; text-decoration: none; }
 .gap-list li a:hover { text-decoration: underline; }
 .gap-list li small { display: block; margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+
+
+.source-meta { display: block; margin-top: 4px; color: #68758c; font-size: 10px; line-height: 1.55; overflow-wrap: anywhere; }
