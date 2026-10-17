@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 
@@ -107,20 +108,48 @@ def normalize_research_run(payload: dict[str, Any], fallback_question: str = "")
     report = result_value if isinstance(result_value, str) else ""
 
     raw_citations = deep_result.get("citations") or payload.get("citations") or []
-    citations: list[dict[str, str]] = []
+    citations: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
     if isinstance(raw_citations, list):
         for item in raw_citations:
             if isinstance(item, str):
-                url, title = item, ""
+                raw: dict[str, Any] = {"url": item}
             elif isinstance(item, dict):
-                url = item.get("url") or item.get("source_url") or ""
-                title = item.get("title") or item.get("name") or ""
+                raw = item
             else:
                 continue
-            if isinstance(url, str) and url.startswith(("https://", "http://")) and url not in seen_urls:
-                citations.append({"url": url, "title": title if isinstance(title, str) else ""})
-                seen_urls.add(url)
+            url = raw.get("url") or raw.get("source_url") or ""
+            if not isinstance(url, str):
+                continue
+            parsed = urlparse(url.strip())
+            if parsed.scheme not in {"https", "http"} or not parsed.hostname or url.strip() in seen_urls:
+                continue
+            url = url.strip()
+            title_value = raw.get("title") or raw.get("name") or ""
+            authors_value = raw.get("authors") or raw.get("author") or []
+            if isinstance(authors_value, str):
+                authors = [authors_value.strip()] if authors_value.strip() else []
+            elif isinstance(authors_value, list):
+                authors = [author.strip() for author in authors_value if isinstance(author, str) and author.strip()][:20]
+            else:
+                authors = []
+            date_value = raw.get("published_at") or raw.get("publication_date") or raw.get("date")
+            source_type_value = raw.get("source_type") or raw.get("type")
+            citations.append({
+                "url": url,
+                "title": title_value.strip() if isinstance(title_value, str) else "",
+                "domain": parsed.hostname.lower(),
+                "authors": authors,
+                "published_at": date_value.strip() if isinstance(date_value, str) else "",
+                "source_type": source_type_value.strip() if isinstance(source_type_value, str) else "",
+                "metadata_status": (
+                    "provider_metadata_partial"
+                    if (title_value or authors or date_value or source_type_value)
+                    else "url_only"
+                ),
+                "verification_note": "URL was supplied by the research provider; page content has not been independently fetched by ResearchPilot AI.",
+            })
+            seen_urls.add(url)
 
     plan = payload.get("research_plan")
     evidence = payload.get("evidence")
