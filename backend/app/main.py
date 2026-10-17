@@ -6,9 +6,12 @@ from datetime import datetime, timezone
 from enum import StrEnum
 from typing import Any
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
+
+load_dotenv()
 
 from app.providers.tinyfish_research import (
     TinyFishAPIError,
