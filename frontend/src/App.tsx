@@ -4,6 +4,7 @@ type Citation = { url: string; title: string };
 type EvidenceNode = { id: string; type: "source" | "claim"; label: string; url?: string };
 type EvidenceEdge = { source: string; target: string; relation: string };
 type EvidenceGraph = { nodes: EvidenceNode[]; edges: EvidenceEdge[] };
+type GapCandidate = { description: string; source_url: string; source_title: string; basis: string };
 type RunHistoryResponse = { runs: RunResponse[] };
 type RunResponse = {
   run_id: string;
@@ -16,6 +17,8 @@ type RunResponse = {
   citations?: Citation[];
   error?: string | null;
   evidence_graph?: EvidenceGraph;
+  gap_candidates?: GapCandidate[];
+  gap_analysis_note?: string;
 };
 
 const sampleQuestion = "Can AI detect river pollution using satellite imagery?";
@@ -109,6 +112,7 @@ export default function App() {
       }
 
       setRun((await response.json()) as RunResponse);
+      void refreshHistory();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unexpected error.");
     } finally {
@@ -293,6 +297,27 @@ export default function App() {
                 )}
               </section>
             )}
+            {run.gap_candidates && run.gap_candidates.length > 0 && (
+              <section className="gap-analysis" aria-labelledby="gap-analysis-heading">
+                <p className="eyebrow">CANDIDATE RESEARCH GAPS</p>
+                <h3 id="gap-analysis-heading">Limitations and future-work leads</h3>
+                <p className="muted-note">
+                  {run.gap_analysis_note ?? "These are leads from explicit source limitations, not proof that a topic is globally novel."}
+                </p>
+                <ol className="gap-list">
+                  {run.gap_candidates.map((candidate, index) => (
+                    <li key={`${candidate.source_url}-${index}`}>
+                      <p>{candidate.description}</p>
+                      <a href={candidate.source_url} target="_blank" rel="noreferrer">
+                        {candidate.source_title || candidate.source_url}
+                      </a>
+                      <small>{candidate.basis}</small>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
             {isTerminal && !hasReport && (
               <p className="muted-note">This run ended without a final report. Check the provider configuration/quota and try again only after confirming the previous run's status.</p>
             )}

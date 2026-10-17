@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
+from app.gap_analysis import extract_gap_candidates
 from app.providers.tinyfish_research import (
     TinyFishAPIError,
     TinyFishConfigurationError,
@@ -81,6 +82,8 @@ class ResearchRunResponse(BaseModel):
     research_plan: Any = Field(default_factory=list)
     evidence: Any = Field(default_factory=list)
     evidence_graph: dict[str, list[dict[str, Any]]] = Field(default_factory=lambda: {"nodes": [], "edges": []})
+    gap_candidates: list[dict[str, str]] = Field(default_factory=list)
+    gap_analysis_note: str = "Candidate gaps reflect explicit source limitations only; they do not establish global novelty."
     error: Any = None
     iterations: int | None = None
 
@@ -182,6 +185,7 @@ def get_research_run(run_id: str) -> ResearchRunResponse:
         research_plan=normalized["research_plan"],
         evidence=normalized["evidence"],
         evidence_graph=normalize_evidence_graph(normalized["evidence"], normalized["citations"]),
+        gap_candidates=extract_gap_candidates(normalized["evidence"], normalized["citations"]),
         error=normalized["error"],
         iterations=normalized["iterations"] if isinstance(normalized["iterations"], int) else None,
     )
