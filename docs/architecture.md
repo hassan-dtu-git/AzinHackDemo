@@ -38,4 +38,4 @@ docs/{prd-researchpilot-mvp.md,architecture.md,api.md,implementation-plan.md,dem
 The current API starts a TinyFish Research API run asynchronously and polls its saved status/report. The provider is beta, account access must be enabled, and deep runs may take several minutes; a separate fast Search + Fetch pipeline may be needed for a short live demo.
 
 ## Reliability and trust
-Use typed schemas and stable IDs. Never fabricate sources/citations. Treat retrieved text as untrusted. Keep keys on the backend. Bound requests, retries, and content sizes. Label confidence as heuristic. A lack of retrieved sources is a search limitation, not proof of novelty.
+Use typed schemas and stable IDs. Never fabricate sources/citations. Treat retrieved text as untrusted. Keep keys on the backend. Bound requests, retries, and content sizes. Label confidence as heuristic. A lack of retrieved sources is a search limitation, not proof of novelty. Candidate gaps must come from explicitly labelled source limitations or future-work statements with source URLs; citation presence alone does not create a gap.
