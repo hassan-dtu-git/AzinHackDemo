@@ -1,10 +1,10 @@
 # Implementation plan
 
 ## Milestones
-1. **Foundation:** verify TinyFish docs/credentials and LLM choice; agree interfaces; establish manifests and secret handling.
+1. **Foundation:** configure TinyFish API credentials and confirm Research API access; agree interfaces; establish manifests and secret handling.
 2. **Vertical slice:** question form, backend health, create-run API, mocked research data, structured report.
-3. **Live discovery:** TinyFish adapter, source normalization, accessible public source fetching, timeouts and partial failures.
-4. **Evidence:** structured extraction, claim/source IDs, support/contradiction relationships, cautious gap labels.
+3. **Live research:** TinyFish Research API adapter and polling are implemented. Verify account access/quotas with one real run; decide whether to add the faster Search + Fetch path for live demo latency.
+4. **Evidence:** normalize the provider evidence schema into stable source/claim IDs, support/contradiction relationships, and cautious gap labels. This remains outstanding.
 5. **UI:** five-stage progress, report sections, evidence graph, accessible list fallback.
 6. **Hardening:** unit/integration/E2E tests, manual citation audit, backup run and demo rehearsal.
 
