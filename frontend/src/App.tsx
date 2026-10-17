@@ -249,7 +249,7 @@ export default function App() {
                         <a href={citation.url} target="_blank" rel="noreferrer">
                           {citation.title || citation.url}
                         </a>
-                        <span className="source-url">{citation.domain || new URL(citation.url).hostname}{citation.published_at ? ` · ${citation.published_at}` : ""}{citation.source_type ? ` · ${citation.source_type}` : ""}</span>
+                        <span className="source-url">{citation.domain || citation.url}{citation.published_at ? ` · ${citation.published_at}` : ""}{citation.source_type ? ` · ${citation.source_type}` : ""}</span>
                         {citation.authors && citation.authors.length > 0 && <span className="source-meta">Authors: {citation.authors.join(", ")}</span>}
                         <span className="source-meta">{citation.metadata_status === "url_only" ? "Metadata: URL only" : "Metadata: partial provider metadata"}</span>
                         {citation.verification_note && <span className="source-meta">{citation.verification_note}</span>}
