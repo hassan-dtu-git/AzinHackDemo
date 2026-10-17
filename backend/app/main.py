@@ -16,6 +16,7 @@ from app.providers.tinyfish_research import (
     TinyFishConfigurationError,
     TinyFishResearchClient,
     normalize_research_run,
+    normalize_evidence_graph,
 )
 
 load_dotenv()
@@ -76,6 +77,7 @@ class ResearchRunResponse(BaseModel):
     citations: list[Citation] = Field(default_factory=list)
     research_plan: Any = Field(default_factory=list)
     evidence: Any = Field(default_factory=list)
+    evidence_graph: dict[str, list[dict[str, Any]]] = Field(default_factory=lambda: {"nodes": [], "edges": []})
     error: Any = None
     iterations: int | None = None
 
@@ -149,6 +151,7 @@ def get_research_run(run_id: str) -> ResearchRunResponse:
         citations=normalized["citations"],
         research_plan=normalized["research_plan"],
         evidence=normalized["evidence"],
+        evidence_graph=normalize_evidence_graph(normalized["evidence"], normalized["citations"]),
         error=normalized["error"],
         iterations=normalized["iterations"] if isinstance(normalized["iterations"], int) else None,
     )
