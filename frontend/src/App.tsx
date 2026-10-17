@@ -13,7 +13,7 @@ type RunResponse = {
   message: string;
   report?: string | null;
   citations?: Citation[];
-  error?: unknown;
+  error?: string | null;
   evidence_graph?: EvidenceGraph;
 };
 
