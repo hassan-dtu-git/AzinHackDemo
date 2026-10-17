@@ -140,11 +140,21 @@ def create_research_run(payload: CreateResearchRunRequest) -> ResearchRunRespons
 
 @app.get("/api/research-runs/{run_id}", response_model=ResearchRunResponse)
 def get_research_run(run_id: str) -> ResearchRunResponse:
-    """Poll the provider for status and its saved report/evidence."""
-    client = get_tinyfish_client()
+    """Refresh a run from TinyFish, falling back to its last saved snapshot."""
+    stored = get_stored_run(run_id)
     try:
+        client = get_tinyfish_client()
         provider_payload = client.get_run(run_id)
-    except TinyFishAPIError as exc:
+    except (HTTPException, TinyFishAPIError) as exc:
+        if stored is not None:
+            saved_response = ResearchRunResponse.model_validate(stored)
+            saved_response.message = (
+                "Showing the last saved snapshot because live provider refresh failed. "
+                "The displayed status and report may be out of date."
+            )
+            return saved_response
+        if isinstance(exc, HTTPException):
+            raise
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     normalized = normalize_research_run(provider_payload)
@@ -152,7 +162,6 @@ def get_research_run(run_id: str) -> ResearchRunResponse:
     if normalized_status not in {item.value for item in RunStatus}:
         normalized_status = "RUNNING"
 
-    stored = get_stored_run(run_id)
     question = normalized["question"] or (stored or {}).get("question") or "Research question"
     stored_created_at = (stored or {}).get("created_at")
     try:
