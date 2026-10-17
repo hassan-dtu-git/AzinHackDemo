@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -15,8 +15,8 @@ from app.providers.tinyfish_research import (
     TinyFishAPIError,
     TinyFishConfigurationError,
     TinyFishResearchClient,
-    normalize_research_run,
     normalize_evidence_graph,
+    normalize_research_run,
 )
 
 load_dotenv()
@@ -116,7 +116,7 @@ def create_research_run(payload: CreateResearchRunRequest) -> ResearchRunRespons
         run_id=run_id,
         question=payload.question,
         status="QUEUED",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         stages=STAGES,
         message=(
             "TinyFish accepted the research request. Deep research may take several minutes; "
