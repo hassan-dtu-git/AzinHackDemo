@@ -144,7 +144,7 @@ def get_research_run(run_id: str) -> ResearchRunResponse:
         run_id=normalized["run_id"] or run_id,
         question=question,
         status=normalized_status,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         stages=STAGES,
         message=normalized["message"],
         report=normalized["report"] or None,
