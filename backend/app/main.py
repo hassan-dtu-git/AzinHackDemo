@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -15,6 +15,7 @@ from app.providers.tinyfish_research import (
     TinyFishAPIError,
     TinyFishConfigurationError,
     TinyFishResearchClient,
+    normalize_evidence_graph,
     normalize_research_run,
 )
 
@@ -76,6 +77,7 @@ class ResearchRunResponse(BaseModel):
     citations: list[Citation] = Field(default_factory=list)
     research_plan: Any = Field(default_factory=list)
     evidence: Any = Field(default_factory=list)
+    evidence_graph: dict[str, list[dict[str, Any]]] = Field(default_factory=lambda: {"nodes": [], "edges": []})
     error: Any = None
     iterations: int | None = None
 
@@ -114,7 +116,7 @@ def create_research_run(payload: CreateResearchRunRequest) -> ResearchRunRespons
         run_id=run_id,
         question=payload.question,
         status="QUEUED",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         stages=STAGES,
         message=(
             "TinyFish accepted the research request. Deep research may take several minutes; "
@@ -142,13 +144,14 @@ def get_research_run(run_id: str) -> ResearchRunResponse:
         run_id=normalized["run_id"] or run_id,
         question=question,
         status=normalized_status,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         stages=STAGES,
         message=normalized["message"],
         report=normalized["report"] or None,
         citations=normalized["citations"],
         research_plan=normalized["research_plan"],
         evidence=normalized["evidence"],
+        evidence_graph=normalize_evidence_graph(normalized["evidence"], normalized["citations"]),
         error=normalized["error"],
         iterations=normalized["iterations"] if isinstance(normalized["iterations"], int) else None,
     )

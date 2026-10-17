@@ -1,6 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
 
 type Citation = { url: string; title: string };
+type EvidenceNode = { id: string; type: "source" | "claim"; label: string; url?: string };
+type EvidenceEdge = { source: string; target: string; relation: string };
+type EvidenceGraph = { nodes: EvidenceNode[]; edges: EvidenceEdge[] };
 type RunResponse = {
   run_id: string;
   question: string;
@@ -11,6 +14,7 @@ type RunResponse = {
   report?: string | null;
   citations?: Citation[];
   error?: unknown;
+  evidence_graph?: EvidenceGraph;
 };
 
 const sampleQuestion = "Can AI detect river pollution using satellite imagery?";
@@ -179,6 +183,45 @@ export default function App() {
                   </ol>
                 ) : (
                   <p className="muted-note">The provider response did not include a normalized citation list. Review the report and provider evidence before relying on its claims.</p>
+                )}
+              </section>
+            )}
+            {run.evidence_graph && run.evidence_graph.nodes.length > 0 && (
+              <section className="evidence-graph" aria-labelledby="evidence-graph-heading">
+                <p className="eyebrow">TRACEABLE EVIDENCE</p>
+                <h3 id="evidence-graph-heading">Evidence graph</h3>
+                <p className="muted-note">
+                  Nodes and links are derived from explicit provider evidence. “Associated” means a source was linked to a claim; it is not a verified support or contradiction judgment.
+                </p>
+                <div className="graph-nodes">
+                  {run.evidence_graph.nodes.map((node) => (
+                    <article className={`graph-node graph-node-${node.type}`} key={node.id}>
+                      <span className="graph-node-type">{node.type === "source" ? "SOURCE" : "CLAIM"}</span>
+                      {node.type === "source" && node.url ? (
+                        <a href={node.url} target="_blank" rel="noreferrer">{node.label}</a>
+                      ) : (
+                        <p>{node.label}</p>
+                      )}
+                    </article>
+                  ))}
+                </div>
+                <h4 className="relationship-heading">Relationships ({run.evidence_graph.edges.length})</h4>
+                {run.evidence_graph.edges.length > 0 ? (
+                  <ul className="relationship-list">
+                    {run.evidence_graph.edges.map((edge, index) => {
+                      const source = run.evidence_graph?.nodes.find((node) => node.id === edge.source);
+                      const target = run.evidence_graph?.nodes.find((node) => node.id === edge.target);
+                      return (
+                        <li key={`${edge.source}-${edge.target}-${index}`}>
+                          <span>{source?.label ?? edge.source}</span>
+                          <strong>{edge.relation.replaceAll("_", " ")}</strong>
+                          <span>{target?.label ?? edge.target}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="muted-note">No explicit source-to-claim links were available in the provider evidence.</p>
                 )}
               </section>
             )}

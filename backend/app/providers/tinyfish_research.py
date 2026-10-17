@@ -143,3 +143,95 @@ def normalize_research_run(payload: dict[str, Any], fallback_question: str = "")
             else "TinyFish research is running. Deep research may take several minutes."
         ),
     }
+
+
+def normalize_evidence_graph(
+    evidence: Any, citations: list[dict[str, str]]
+) -> dict[str, list[dict[str, Any]]]:
+    """Build a conservative graph from explicit provider evidence only.
+
+    Citation-only sources become source nodes. Claim nodes and source-to-claim edges are
+    created only when an evidence item explicitly contains claim text and a source URL.
+    Unknown relationships are labelled "associated"; contradiction/support labels are
+    retained only when the provider explicitly supplies them.
+    """
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, str]] = []
+    source_ids: dict[str, str] = {}
+    claim_ids: dict[str, str] = {}
+
+    def add_source(url: str, title: str = "") -> str:
+        if url not in source_ids:
+            source_id = f"source-{len(source_ids) + 1}"
+            source_ids[url] = source_id
+            nodes.append({
+                "id": source_id,
+                "type": "source",
+                "label": title.strip() or url,
+                "url": url,
+            })
+        elif title.strip():
+            for node in nodes:
+                if node["id"] == source_ids[url] and node["label"] == url:
+                    node["label"] = title.strip()
+                    break
+        return source_ids[url]
+
+    for citation in citations:
+        url = citation.get("url", "")
+        if isinstance(url, str) and url.startswith(("https://", "http://")):
+            add_source(url, str(citation.get("title") or ""))
+
+    if isinstance(evidence, dict):
+        items = evidence.get("items") if isinstance(evidence.get("items"), list) else [evidence]
+    elif isinstance(evidence, list):
+        items = evidence
+    else:
+        items = []
+
+    allowed_relations = {
+        "supports", "contradicts", "mentions", "associated", "qualifies"
+    }
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        claim = next(
+            (
+                item.get(key).strip()
+                for key in ("claim", "statement", "finding", "text")
+                if isinstance(item.get(key), str) and item.get(key).strip()
+            ),
+            "",
+        )
+        if not claim:
+            continue
+
+        source_value = item.get("source")
+        if isinstance(source_value, dict):
+            url = source_value.get("url") or source_value.get("source_url") or ""
+            title = source_value.get("title") or source_value.get("name") or ""
+        else:
+            url = item.get("source_url") or item.get("url") or ""
+            title = item.get("source_title") or item.get("title") or ""
+        if not isinstance(url, str) or not url.startswith(("https://", "http://")):
+            continue
+
+        source_id = add_source(url, title if isinstance(title, str) else "")
+        if claim not in claim_ids:
+            claim_id = f"claim-{len(claim_ids) + 1}"
+            claim_ids[claim] = claim_id
+            nodes.append({"id": claim_id, "type": "claim", "label": claim})
+        else:
+            claim_id = claim_ids[claim]
+
+        relation_value = item.get("relation") or item.get("relationship") or item.get("stance")
+        relation = (
+            relation_value.strip().lower()
+            if isinstance(relation_value, str) and relation_value.strip().lower() in allowed_relations
+            else "associated"
+        )
+        edge = {"source": source_id, "target": claim_id, "relation": relation}
+        if edge not in edges:
+            edges.append(edge)
+
+    return {"nodes": nodes, "edges": edges}
