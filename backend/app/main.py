@@ -68,6 +68,12 @@ class CreateResearchRunRequest(BaseModel):
 class Citation(BaseModel):
     url: str
     title: str = ""
+    domain: str = ""
+    authors: list[str] = Field(default_factory=list)
+    published_at: str = ""
+    source_type: str = ""
+    metadata_status: str = "url_only"
+    verification_note: str = "URL supplied by provider; page content not independently fetched."
 
 
 class ResearchRunResponse(BaseModel):

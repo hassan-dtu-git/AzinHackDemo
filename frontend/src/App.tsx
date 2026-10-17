@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 
-type Citation = { url: string; title: string };
+type Citation = { url: string; title: string; domain?: string; authors?: string[]; published_at?: string; source_type?: string; metadata_status?: string; verification_note?: string };
 type EvidenceNode = { id: string; type: "source" | "claim"; label: string; url?: string };
 type EvidenceEdge = { source: string; target: string; relation: string };
 type EvidenceGraph = { nodes: EvidenceNode[]; edges: EvidenceEdge[] };
@@ -249,7 +249,10 @@ export default function App() {
                         <a href={citation.url} target="_blank" rel="noreferrer">
                           {citation.title || citation.url}
                         </a>
-                        {citation.title && <span className="source-url">{citation.url}</span>}
+                        <span className="source-url">{citation.domain || citation.url}{citation.published_at ? ` · ${citation.published_at}` : ""}{citation.source_type ? ` · ${citation.source_type}` : ""}</span>
+                        {citation.authors && citation.authors.length > 0 && <span className="source-meta">Authors: {citation.authors.join(", ")}</span>}
+                        <span className="source-meta">{citation.metadata_status === "url_only" ? "Metadata: URL only" : "Metadata: partial provider metadata"}</span>
+                        {citation.verification_note && <span className="source-meta">{citation.verification_note}</span>}
                       </li>
                     ))}
                   </ol>
