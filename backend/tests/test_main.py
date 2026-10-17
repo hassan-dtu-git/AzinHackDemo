@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.providers.tinyfish_research import normalize_evidence_graph
 
 client = TestClient(app)
 
@@ -62,3 +63,46 @@ def test_create_run_rejects_blank_question() -> None:
 def test_create_run_rejects_too_long_question() -> None:
     response = client.post("/api/research-runs", json={"question": "x" * 1001})
     assert response.status_code == 422
+
+
+
+def test_evidence_graph_uses_only_explicit_claim_source_links() -> None:
+    graph = normalize_evidence_graph(
+        [
+            {
+                "claim": "Satellite imagery can indicate turbidity.",
+                "source_url": "https://example.org/paper",
+                "relation": "supports",
+            },
+            {
+                "claim": "This unsupported claim must not become a graph node.",
+            },
+            {
+                "claim": "Contradictory claim with invalid URL.",
+                "source_url": "javascript:alert(1)",
+                "relation": "contradicts",
+            },
+        ],
+        [{"url": "https://example.org/paper", "title": "Example paper"}],
+    )
+
+    assert len(graph["nodes"]) == 2
+    assert {node["type"] for node in graph["nodes"]} == {"source", "claim"}
+    assert graph["edges"] == [
+        {"source": "source-1", "target": "claim-1", "relation": "supports"}
+    ]
+
+
+def test_evidence_graph_does_not_infer_contradictions() -> None:
+    graph = normalize_evidence_graph(
+        [
+            {
+                "statement": "A source-linked finding.",
+                "source": {"url": "https://example.org/one", "title": "Paper"},
+            }
+        ],
+        [],
+    )
+
+    assert len(graph["edges"]) == 1
+    assert graph["edges"][0]["relation"] == "associated"
