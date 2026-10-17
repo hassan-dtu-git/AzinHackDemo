@@ -138,3 +138,13 @@ textarea::placeholder { color: #9aa4b5; }
   .history-heading-row { align-items: flex-start; }
   .history-item { align-items: flex-start; flex-direction: column; }
 }
+
+
+.gap-analysis { margin-top: 28px; padding-top: 25px; border-top: 1px solid var(--line); }
+.gap-analysis h3 { margin: 0 0 10px; font-size: 20px; letter-spacing: -.4px; }
+.gap-list { display: grid; gap: 10px; margin: 16px 0 0; padding: 0; list-style: none; counter-reset: gap-counter; }
+.gap-list li { counter-increment: gap-counter; padding: 15px; border: 1px solid var(--line); border-radius: 11px; background: #fbfcfe; }
+.gap-list li p { margin: 0 0 10px; color: var(--ink); font-size: 13px; line-height: 1.65; }
+.gap-list li a { display: inline-block; color: var(--accent-dark); font-size: 11px; font-weight: 750; overflow-wrap: anywhere; text-decoration: none; }
+.gap-list li a:hover { text-decoration: underline; }
+.gap-list li small { display: block; margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.5; }
