@@ -29,6 +29,39 @@ export default function App() {
   const [history, setHistory] = useState<RunResponse[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
+  async function refreshHistory() {
+    try {
+      const response = await fetch("/api/research-runs");
+      if (response.ok) {
+        const body = (await response.json()) as RunHistoryResponse;
+        setHistory(body.runs);
+      }
+    } catch {
+      // History is an enhancement; the current run remains usable if this request fails.
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
+
+  async function reopenRun(runId: string) {
+    setError("");
+    try {
+      const response = await fetch(`/api/research-runs/${encodeURIComponent(runId)}`);
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.detail ?? "Could not reopen this research run.");
+      }
+      setRun((await response.json()) as RunResponse);
+      void refreshHistory();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not reopen this research run.");
+    }
+  }
+
+  useEffect(() => {
+    void refreshHistory();
+  }, []);
+
   useEffect(() => {
     if (!run || terminalStatuses.has(run.status)) return;
     const timeout = window.setTimeout(async () => {
@@ -39,7 +72,6 @@ export default function App() {
           throw new Error(body?.detail ?? "Could not retrieve research status.");
         }
         setRun((await response.json()) as RunResponse);
-      void refreshHistory();
         void refreshHistory();
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "Could not refresh research status.");
